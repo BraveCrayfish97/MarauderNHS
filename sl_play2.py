@@ -20,6 +20,8 @@ with sl.form("Login Form"):
     if sl.form_submit_button("Submit"):
         login(email, password)
         sl.session_state["email"] = email #so i can use it in HourViewer file
+        if sl.session_state != "":
+            sl.session_state["logged_in"] = True
 
 sl.title("File Upload")
 sl.markdown("---")
@@ -34,10 +36,6 @@ image = sl.file_uploader(label="Upload Here", type=["png", "jpg"])
 if image is not None:#then display the image
     sl.image(image)
     
-    
-    #response = textract_client.analyze_document(
-    #    Document={"Bytes":image.read()},FeatureTypes=["FORMS"]
-    #)
     print(type(image.read()))
     image.seek(0)
     file_name = upload_to_s3(image, email)
@@ -124,18 +122,6 @@ if image is not None:#then display the image
             review_submit(sl.session_state["email"], location, desc, hours, mins, start, end , month, day, supervisor_name, supervisor_number,file_name)
     
     
-    """print("here is NICE/FIXED DATA ----------------- ------- " )
-    print(location)
-    print(start)
-    print(end)
-    print(hours)
-    print(mins)
-    print(desc)
-    print(month)
-    print(day)
-    print(supervisor_name)
-    print(supervisor_number)    """
-    
 
 
     ## CODE FOR SAVING NEW FILE TO HERE
@@ -146,4 +132,3 @@ if image is not None:#then display the image
     #file.write(image.read())
     #file.close()
     
-sl.write(sl.session_state)
