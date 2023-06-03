@@ -12,19 +12,19 @@ table=dynamodb.Table("NHS_Individual_Hours")
 
 
 sl.title("View Hours Here")
-if sl.button("Click to see data"):
-    email = sl.session_state.get("email", "")
-    if email=="":
-        sl.write("Please Login First")
-    else:
+viewed = sl.button("Click to see data")
+if "viewed" not in sl.session_state:
+    sl.session_state["viewed"] = viewed
+if "logged_in" in sl.session_state:
+    if viewed | sl.session_state["viewed"]:
+        sl.session_state["viewed"]=True
+        email = sl.session_state.get("email", "")
+
         data = query_for_email(email)
-        sl.dataframe(data['Items'])
-        #df = pd.DataFrame(response)
-        #df.to_html()
-        
+        show_student_hours(data['Items'])
+            
         total_hours = calc_total_hours(data)
-        
         sl.markdown("<h1> You have *"+str(total_hours)+"* hours </h1>", unsafe_allow_html=True)
+else:
+    sl.write("Please Login First")
 
-
-sl.write(sl.session_state)
