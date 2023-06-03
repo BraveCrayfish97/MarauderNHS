@@ -63,3 +63,28 @@ def display_image(url):
 def make_link(url):
     sl.markdown(f"[Hour Sheet]({url})")
 
+def show_student_hours(response):
+    
+    cols   = sl.columns([0.5,3,2,1,1,1,2])
+    fields = ["#","email", "month", "day", "hours", "mins","Button"]
+
+    # header
+    for col, field in zip(cols, fields):
+        col.write("**"+field+"**")
+    # rows
+    for idx, row in enumerate(response):
+        #sl.write(row)
+        cols = sl.columns([0.5,3,2,1,1,1,2])
+        cols[0].write(idx)
+        for i in range(1,len(fields)-1):
+            
+            cols[i].write(row[fields[i]])
+        placeholder = cols[len(fields)-1]
+        show_more   = placeholder.button("more", key=idx, type="primary")
+        if show_more:
+            # rename button
+            placeholder.button("Close", key=str(idx)+"_")
+            # show image
+            display_s3_file(row["filename"])
+            
+            
