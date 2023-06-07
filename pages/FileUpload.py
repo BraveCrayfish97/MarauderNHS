@@ -1,13 +1,12 @@
 import streamlit as sl
 import boto3
 from textract_kv_parser import parse
-from textblob import TextBlob
 from datetime import datetime
 import re
 from functions import *
 
 
-sl.markdown("<h1 style= 'text-align:center;'> Login Page </h1>", unsafe_allow_html=True)
+"""sl.markdown("<h1 style= 'text-align:center;'> Login Page </h1>", unsafe_allow_html=True)
 with sl.form("Login Form"):
     col1, col2 = sl.columns(2)
     with col1:
@@ -20,8 +19,8 @@ with sl.form("Login Form"):
     if sl.form_submit_button("Submit"):
         login(email, password)
         sl.session_state["email"] = email #so i can use it in HourViewer file
-        if sl.session_state != "":
-            sl.session_state["logged_in"] = True
+        if sl.session_state["email"] != "":
+            sl.session_state["logged_in"] = True"""
 
 sl.title("File Upload")
 sl.markdown("---")
@@ -33,12 +32,12 @@ region="us-east-1"
 textract_client = boto3.client("textract", aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name=region)
 image = sl.file_uploader(label="Upload Here", type=["png", "jpg"])
 
-if image is not None:#then display the image
+if (image is not None) and (sl.session_state["logged_in"]):#then display the image
     sl.image(image)
     
     print(type(image.read()))
     image.seek(0)
-    file_name = upload_to_s3(image, email)
+    file_name = upload_to_s3(image, sl.session_state["email"])
     image.seek(0)
     """Document={
             'S3Object': {
