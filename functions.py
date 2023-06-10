@@ -95,17 +95,80 @@ def show_student_hours(response):
             
             cols[i].write(row[fields[i]])
         placeholder = cols[len(fields)-1]
-        show_more   = placeholder.button("View Image", key=idx, type="primary")
+        show_more   = placeholder.button("View", key=idx, type="primary")
         if show_more:
             # rename button
             placeholder.button("Close", key=str(idx)+"_")
             # show image
             display_s3_file(row["filename"])
+def show_student_pending_hours(response):
+    cols   = sl.columns([0.5,3,2,1,1.5,1.5,2,2,2,2,2,2])
+    fields = ["#","email", "month", "day", "hours", "mins", "location", "desc","status", "Image","Approve","Deny"]
+
+    # header
+    for col, field in zip(cols, fields):
+        col.write("**"+field+"**")
+    # rows
+    emails=[]
+    uuids=[]
+    for idx, row in enumerate(response):
+        emails.append(row["email"])
+        uuids.append(row["UUID"])
+        with sl.container():#does nothing
+            #sl.write(row)
+            cols = sl.columns([0.5,3,2,1,1.5,1.5,2,2,2,2,2,2])
+            cols[0].write(idx)
+            for i in range(1,len(fields)-3):
+                
+                cols[i].text(row[fields[i]])
+            #ViewButton
+            placeholder1 = cols[len(fields)-3]
+            placeholder1.em
+            show_more1 = placeholder1.button("View", key=idx, type="primary")
+            if show_more1:
+                # rename button
+                placeholder1.button("Close", key=str(idx)+"1")
+                # show image
+                display_s3_file(row["filename"])
+            #ApproveButton
+            placeholder2 = cols[len(fields)-2]
+            show_more2 = placeholder2.button("Approve", key=idx+1000, type="primary")
+            if show_more2:
+                # rename button
+                placeholder2.button("Close", key=str(idx)+"2")
+                #change status to approved
+                dynamodb.Table("NHS_Individual_Hours").update_item(
+                    Key={'email':emails[idx],'UUID': uuids[idx]},
+                    UpdateExpression="SET #attrName = :attrValue",
+                    ExpressionAttributeNames={'#attrName': 'status'},
+                    ExpressionAttributeValues={':attrValue': 'approved'}
+                )
+            #DenyButton
+            placeholder3 = cols[len(fields)-1]
+            show_more3 = placeholder3.button("Deny", key=idx+10000, type="primary")
+            if show_more3:
+                # rename button
+                placeholder3.button("Close", key=str(idx)+"3")
+                
+                #change status to denied
+                dynamodb.Table("NHS_Individual_Hours").update_item(
+                    Key={'email':emails[idx],'UUID': uuids[idx]},
+                    UpdateExpression="SET #attrName = :attrValue",
+                    ExpressionAttributeNames={'#attrName': 'status'},
+                    ExpressionAttributeValues={':attrValue': 'denied'}
+                )
+                #send denied notif
+                #.....
+        
+
+
 def check_if_new_student(email):
     response = dynamodb.Table("NHS_Students").query(
         KeyConditionExpression=Key('email').eq(email)
     )
     return response['Items']==[]
+def scan_all_pending():
+    return dynamodb.Table("NHS_Individual_Hours").scan(FilterExpression=Attr('status').eq('pending'))
 #----------------------------
 #GOOGLE OAUTH FUNCS
 async def get_authorization_url(client: GoogleOAuth2, redirect_uri: str):
@@ -159,3 +222,20 @@ def auth_user() -> void:
         return user_email, name
     else:
         print(f'Error retrieving user profile: {response.status_code}\nPlease try again.')
+
+"""def grade_selection():
+    #dropdownmenu for junior/senior
+    grade = sl.selectbox("Are you a junior or a senior",("","junior","senior"))
+    if grade: #if they picked something
+        #add to NHS_Students
+        dynamodb.Table("NHS_Students").put_item(
+            Item={
+                'email': user_email,
+                'name': name,
+                'grade': sl.session_state["grade"]
+                }
+        )
+        if sl.session_state["grade"]:
+            sl.session_state["logged_in"]=True
+    else:
+        sl.session_state["logged_in"] = True"""
