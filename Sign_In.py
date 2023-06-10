@@ -2,6 +2,9 @@ import streamlit as sl
 from functions import *
 import requests
 
+sl.set_page_config(layout="wide",menu_items={
+        'About': "# MarauderNHS\n### Created by Rishi Chapati and Daniel Wang."
+    })
 
 sl.markdown("<h1 style= 'text-align:center;'> Login Page </h1>", unsafe_allow_html=True)
 sl.write(get_login_str(), unsafe_allow_html=True)
