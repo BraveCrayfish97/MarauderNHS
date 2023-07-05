@@ -6,21 +6,6 @@ import re
 from functions import *
 
 
-"""sl.markdown("<h1 style= 'text-align:center;'> Login Page </h1>", unsafe_allow_html=True)
-with sl.form("Login Form"):
-    col1, col2 = sl.columns(2)
-    with col1:
-        email = sl.text_input("Email",value="")
-        
-        print("added email to session " + email)
-    with col2:
-        password = sl.text_input("Password",value="")
-    
-    if sl.form_submit_button("Submit"):
-        login(email, password)
-        sl.session_state["email"] = email #so i can use it in HourViewer file
-        if sl.session_state["email"] != "":
-            sl.session_state["logged_in"] = True"""
 
 sl.title("File Upload")
 sl.markdown("---")
@@ -119,7 +104,6 @@ if (image is not None) and (sl.session_state["logged_in"]):#then display the ima
         
         if sl.form_submit_button("Submit"):
             review_submit(sl.session_state["email"], location, desc, hours, mins, start, end , month, day, supervisor_name, supervisor_number,file_name)
-    
     
 
 
