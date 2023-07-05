@@ -11,12 +11,7 @@ sl.write(get_login_str(), unsafe_allow_html=True)
 
 print("hey")
 
-"""if sl.button('Sign-in'):
-    email, name = auth_user()
-    sl.session_state["email"] = email
-    sl.session_state["name"] = name
-    sl.session_state["auth"] = True
-    sl.session_state['logged_in']=True"""
+
 try:
     email, name = auth_user()
     sl.session_state["email"] = email
@@ -36,16 +31,31 @@ if 'auth' in sl.session_state:
                     Item={
                         'email': sl.session_state['email'],
                         'name': sl.session_state['name'],
-                        'grade': grade
+                        'grade': grade,
+                        'total hours': 0,
+                        'strikes': 0
+                        }
+                )
+                dynamodb.Table("Meeting_Attendance").put_item(
+                    Item={
+                        'email': sl.session_state['email'],
+                        'name': sl.session_state['name'],
+                        'grade': grade,
+                        'September': False,
+                        'October': False,
+                        'November': False,
+                        'December': False,
+                        'January': False,
+                        'February': False,
+                        'March': False,
+                        'April': False,
+                        'May': False
                         }
                 )
                 sl.write("Thanks for signing up. \nWelcome to Marauder NHS")
         else:#not new
             sl.write("Thanks for signing in")
-#try out container method
-sl.write(sl.session_state)
 
-#try try except around just displayuser()
 
 
 
