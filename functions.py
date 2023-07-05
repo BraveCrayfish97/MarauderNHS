@@ -44,7 +44,8 @@ def review_submit(email, location,desc, hours, mins, start, end, month, day, sup
         'day': day,
         'supervisor_name': supervisor_name,
         'supervisor_number': supervisor_number,
-        'filename': filename
+        'filename': filename,
+        'status': "pending"
     }
 )
 def login(email, password):
@@ -68,9 +69,15 @@ def query_for_email(email):
 
 def calc_total_hours(response):
     total_hours = 0
+    approved_hours = 0
+    denied_hours = 0
     for item in response['Items']:
+        if item['status'] == 'approved':
+            approved_hours += item['hours']
+        if item['status'] == 'denied':
+            denied_hours += item['hours']
         total_hours+= item['hours']
-    return total_hours
+    return total_hours, approved_hours, denied_hours
 
 def display_image(url):
     sl.image(url, width=100)
@@ -80,8 +87,8 @@ def make_link(url):
 
 def show_student_hours(response):
     
-    cols   = sl.columns([0.5,3,2,1,1.5,1.5,2,2,2])
-    fields = ["#","email", "month", "day", "hours", "mins", "location", "desc","Image"]
+    cols   = sl.columns([0.8,3,1.5,1,1,1,2,2,2,2])
+    fields = ["#","email", "month", "day", "hours", "mins", "location", "desc","status","Image"]
 
     # header
     for col, field in zip(cols, fields):
@@ -89,11 +96,11 @@ def show_student_hours(response):
     # rows
     for idx, row in enumerate(response):
         #sl.write(row)
-        cols = sl.columns([0.5,3,2,1,1.5,1.5,2,2,2])
+        cols = sl.columns([0.8,3,1.5,1,1,1,2,2,2,2])
         cols[0].write(idx)
         for i in range(1,len(fields)-1):
             
-            cols[i].write(row[fields[i]])
+            cols[i].text(row[fields[i]])
         placeholder = cols[len(fields)-1]
         show_more   = placeholder.button("View", key=idx, type="primary")
         if show_more:
@@ -135,7 +142,7 @@ def show_student_pending_hours(response):
             show_more2 = placeholder2.button("Approve", key=idx+1000, type="primary")
             if show_more2:
                 # rename button
-                placeholder2.button("Close", key=str(idx)+"2")
+                placeholder2.button("Clear", key=str(idx)+"2")
                 #change status to approved
                 dynamodb.Table("NHS_Individual_Hours").update_item(
                     Key={'email':emails[idx],'UUID': uuids[idx]},
@@ -143,12 +150,23 @@ def show_student_pending_hours(response):
                     ExpressionAttributeNames={'#attrName': 'status'},
                     ExpressionAttributeValues={':attrValue': 'approved'}
                 )
+                #add to NHS_STD TOTAL HOURS
+                dynamodb.Table("NHS_Students").update_item(
+                    Key={'email': row[fields[1]]},
+                    UpdateExpression='SET #total = #total + :val',
+                    ExpressionAttributeNames={
+                        '#total': 'total hours'
+                    },
+                    ExpressionAttributeValues={
+                        ':val' : row[fields[4]],
+                    }
+                )     
             #DenyButton
             placeholder3 = cols[len(fields)-1]
             show_more3 = placeholder3.button("Deny", key=idx+10000, type="primary")
             if show_more3:
                 # rename button
-                placeholder3.button("Close", key=str(idx)+"3")
+                placeholder3.button("Clear", key=str(idx)+"3")
                 
                 #change status to denied
                 dynamodb.Table("NHS_Individual_Hours").update_item(
@@ -169,6 +187,77 @@ def check_if_new_student(email):
     return response['Items']==[]
 def scan_all_pending():
     return dynamodb.Table("NHS_Individual_Hours").scan(FilterExpression=Attr('status').eq('pending'))
+def scan_all_students():
+    return dynamodb.Table("NHS_Students").scan()
+def show_all_students(response):
+    #make strike button
+    #make total hours
+    cols   = sl.columns([0.5,3,3, 1.5, 0.75, 0.75,2])
+    fields = ["#","email", "name", "grade","total hours", "strikes", "."]
+
+    # header
+    i=1
+    for col, field in zip(cols, fields):
+        if i != len(fields):
+            col.write("**"+field+"**")
+        i+=1
+    # rows
+    for idx, row in enumerate(response):
+        #sl.write(row)
+        cols = sl.columns([0.5,3,3, 1.5, 0.75, 0.75,2])
+        cols[0].write(idx)
+        for i in range(1,len(fields)-1):
+            
+            cols[i].write(row[fields[i]])
+        placeholder = cols[len(fields)-1]
+        show_more   = placeholder.button("Give Strike", key=idx, type="primary")
+        print(row[fields[1]])
+        if show_more:
+
+            dynamodb.Table("NHS_Students").update_item(
+                Key={'email': row[fields[1]]},
+                UpdateExpression='SET strikes = strikes + :val',
+                ExpressionAttributeValues={
+                    ':val' : 1
+                }
+            )
+
+
+def get_meeting_data():
+    return dynamodb.Table("Meeting_Attendance").scan()['Items']
+def get_val(idx, response, month):
+    return response[idx][month]
+
+def check_change(row, month, idx):
+    dynamodb.Table("Meeting_Attendance").update_item(
+        Key={'email': row['email']},
+        UpdateExpression="SET #attrName = :attrValue",
+        ExpressionAttributeNames={'#attrName': month},
+        ExpressionAttributeValues={':attrValue': sl.session_state[str(idx)+"_checkbox"]}
+    )
+def show_meeting_sheet(month):
+    # scan Meeting_Attendancewsdcv
+    response = get_meeting_data()
+    # display name- present check or not if false for "month"
+    cols = sl.columns([2, 1.5, 2])
+    fields = ["name", "grade", "attendance"]
+
+    # header
+    for col, field in zip(cols, fields):
+        col.write("**" + field + "**")
+
+    # rows
+    for idx, row in enumerate(response):
+        # sl.write(row)
+        cols = sl.columns([2, 1.5, 2])
+        for i in range(0, len(fields) - 1):
+            cols[i].write(row[fields[i]])
+
+        val = get_val(idx, response, month)
+        sl.session_state['check'] = cols[len(fields) - 1].checkbox(label="", value=val, key=str(idx) + "_checkbox", on_change=check_change, args=(row, month, idx))
+
+
+
 #----------------------------
 #GOOGLE OAUTH FUNCS
 async def get_authorization_url(client: GoogleOAuth2, redirect_uri: str):
