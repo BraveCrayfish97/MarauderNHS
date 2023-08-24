@@ -11,7 +11,7 @@ sl.write(get_login_str(), unsafe_allow_html=True)
 
 print("hey")
 
-
+sl.session_state["admins"] = ["wangd1@go.lisd.net","poped@go.lisd.net","lawrencec@go.lisd.net","warcholinskah@go.lisd.net","oluwolei@go.lisd.net","garga2@go.lisd.net","cortespinedoc@go.lisd.net","chapatir@go.lisd.net","rishi.chapati@gmail.com","petkoffc@lisd.net"]
 try:
     email, name = auth_user()
     sl.session_state["email"] = email
@@ -49,7 +49,8 @@ if 'auth' in sl.session_state:
                         'February': False,
                         'March': False,
                         'April': False,
-                        'May': False
+                        'May': False,
+                        'absent': 0
                         }
                 )
                 sl.write("Thanks for signing up. \nWelcome to Marauder NHS")
