@@ -109,6 +109,7 @@ def show_student_hours(response):
             # show image
             display_s3_file(row["filename"])
 def show_student_pending_hours(response):
+    response = sorted(response, key=lambda x: x['email'])
     cols   = sl.columns([0.5,3,2,1,1.5,1.5,2,2,2,2,2,2])
     fields = ["#","email", "month", "day", "hours", "mins", "location", "desc","status", "Image","Approve","Deny"]
 
@@ -190,6 +191,7 @@ def scan_all_pending():
 def scan_all_students():
     return dynamodb.Table("NHS_Students").scan()
 def show_all_students(response):
+    response = sorted(response, key=lambda x: x['email'])
     #make strike button
     #make total hours
     cols   = sl.columns([0.5,3,3, 1.5, 0.75, 0.75,2])
@@ -238,6 +240,7 @@ def check_change(row, month, idx):
 def show_meeting_sheet(month):
     # scan Meeting_Attendancewsdcv
     response = get_meeting_data()
+    response = sorted(response, key=lambda x: x['email'])
     # display name- present check or not if false for "month"
     cols = sl.columns([2, 1.5, 2])
     fields = ["name", "grade", "attendance"]
@@ -256,6 +259,36 @@ def show_meeting_sheet(month):
         val = get_val(idx, response, month)
         sl.session_state['check'] = cols[len(fields) - 1].checkbox(label="", value=val, key=str(idx) + "_checkbox", on_change=check_change, args=(row, month, idx))
 
+def submit_meeting_attendance(month):
+    col1, col2 = sl.columns([4, 1])
+    response = get_meeting_data()
+    response = sorted(response, key=lambda x: x['email'])
+    
+    
+    with col2:
+        if sl.button("Submit Attendance"):
+            
+            for idx, data in enumerate(response):
+                if data[month]==False:
+                    # if absent is over 2, add one to strikes-since we are adding 1 to absent after this, we just need to check if absent is 2 or greater
+                    if data["absent"] >= 2:
+                        dynamodb.Table("NHS_Students").update_item(
+                            Key={'email': data['email']},
+                            UpdateExpression='SET strikes = strikes + :val',
+                            ExpressionAttributeValues={
+                                ':val' : 1
+                            }
+                        )
+                    
+                    # also add 1 to absent in table
+                    dynamodb.Table("Meeting_Attendance").update_item(
+                        Key={'email': data['email']},
+                        UpdateExpression='SET absent = absent + :val',
+                        ExpressionAttributeValues={
+                            ':val' : 1
+                        }
+                    )
+                    print()
 
 
 #----------------------------
